@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <title>PC_Store</title>
+    <th:block th:replace="/layout/head :: head"/>
+</head>
+
+<body data-layout="horizontal">
+<!--<div class="loader hide"></div>-->
+<!-- Begin page -->
+<div id="wrapper">
+
+    <th:block th:replace="/layout/header :: header"/>
+
+    <div class="content-page">
+        <div class="content">
+
+            <!-- Start Content-->
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title" style="text-decoration: none ; color: black"><a href="/users">USER LIST</a></h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-12">
+                    <div class="card-box" style="border: none">
+                        <div class="row">
+                            <div class="col-9">
+                                <h4 class="header-title mb-3">List Product</h4>
+
+                            </div>
+                            <div class="col-3">
+                                <button id="btnShowCreateModal" class="btn btn-success btn-add create"
+                                        style="margin-left: 50px; margin-bottom: 15px">
+                                    <i class="fa fa-plus"></i> Add new Product
+                                </button>
+                            </div>
+                            <table id="tbProduct" class="table table-hover dt-responsive"
+                                   style="border-collapse: collapse; border-spacing:  0;border-color: darkgrey; width: 100%;text-align: center; background-color: #a3adc1; opacity: 0.9 ">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name Product</th>
+                                        <th>Amount</th>
+                                        <th>Price</th>
+                                        <th>Describe</th>
+                                        <th>Avatar</th>
+                                        <th colspan="2">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                    <th:block th:replace="/product/modalCreate :: modalCreate"/>
+                    <th:block th:replace="/product/modalUpdate :: modalUpdate"/>
+        <footer class="footer">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        06/2022 - 12/2022 &copy; Theme by ZIRCOS Design
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+</div>
+    <th:block th:replace="/layout/script :: script"/>
+
+    <script>
+
+        let page = {
+            urls: {
+                getAllProducts: App.BASE_URL_PRODUCT,
+                getProductById: App.BASE_URL_PRODUCT,
+                create: App.BASE_URL_PRODUCT + "/create",
+                update: App.BASE_URL_PRODUCT + "/update",
+                delete: App.BASE_URL_PRODUCT + "/delete/"
+            },
+            elements: {},
+            loadData: {},
+            commands: {},
+            dialogs: {
+                elements: {},
+                loadData: {},
+                commands: {},
+                alertDanger: {}
+            },
+            initializeEventControl: {}
+        }
+
+        let avatar = new Avatar();
+        let product = new Product();
+
+        // page.elements.loader = $(".loader")
+        page.elements.tbProduct = $("#tbProduct tbody");
+        page.elements.btnShowCreateModal = $("#btnShowCreateModal");
+        page.elements.modalCreate = $("#modalCreate");
+        page.elements.modalUpdate = $("#modalUpdate");
+
+        page.dialogs.elements.frmCreate = $("#frmCreate");
+        page.dialogs.elements.nameCre = $("#nameCre");
+        page.dialogs.elements.amountCre = $("#amountCre");
+        page.dialogs.elements.priceCre = $("#priceCre");
+        page.dialogs.elements.descriptionCre = $("#descriptionCre");
+        page.dialogs.elements.btnCreate = $("#btnCreate");
+
+        page.dialogs.elements.frmUpdate = $("#frmUpdate");
+        page.dialogs.elements.nameUp = $("#nameUp");
+        page.dialogs.elements.amountUp = $("#amountUp");
+        page.dialogs.elements.priceUp = $("#priceUp");
+        page.dialogs.elements.descriptionUp = $("#descriptionUp");
+        page.dialogs.elements.btnUpdate = $("#btnUpdate");
+
+        page.dialogs.elements.wrapper = $("section .wrapper");
+        page.dialogs.elements.imageFile = $("#imageFile");
+        page.dialogs.elements.wrapperContent = $("section .wrapper .content");
+        page.dialogs.elements.imagePreview = $("section .image-preview canvas");
+        page.dialogs.elements.canvas = $("#canvas");
+        page.dialogs.elements.context = page.dialogs.elements.canvas[0].getContext('2d');
+        page.dialogs.elements.imagePreview.css("display", "none");
+        page.dialogs.elements.divImagePreview = $("div.image-preview, div.file-name");
+        page.dialogs.elements.btnClearImagePreview = $(".clear-image-preview i");
+
+        page.dialogs.elements.wrapperUp = $("#frmUpdate section .wrapper");
+        page.dialogs.elements.imageFileUp = $("#imageFileUp");
+        page.dialogs.elements.wrapperContentUp = $("#frmUpdate section .wrapper .content");
+        page.dialogs.elements.imagePreviewUp = $("#frmUpdate section .image-preview canvas");
+        page.dialogs.elements.canvasUp = $("#canvasUp");
+        page.dialogs.elements.contextUp = page.dialogs.elements.canvasUp[0].getContext('2d');
+        page.dialogs.elements.imagePreviewUp.css("display", "none");
+        page.dialogs.elements.divImagePreviewUp = $("#frmUpdate div.image-preview, #frmUpdate div.file-name");
+
+        //-Load image Update-//
+        page.dialogs.commands.loadImageToCanvasUp = (imageFile, fileType, imageUrl) => {
+            page.dialogs.elements.imagePreviewUp.css("display", "");
+            page.dialogs.elements.wrapperUp.addClass("active");
+            page.dialogs.elements.wrapperContentUp.css("opacity", 0);
+
+            let imageObj = new Image();
+
+            imageObj.onload = function () {
+                page.dialogs.elements.contextUp.canvas.width = imageObj.width;
+                page.dialogs.elements.contextUp.canvas.height = imageObj.height;
+                page.dialogs.elements.contextUp.drawImage(imageObj, 0, 0, imageObj.width, imageObj.height);
+            };
+            if (fileType === "BINARY") {
+                imageObj.src = URL.createObjectURL(imageFile);
+            } else {
+                imageObj.src = imageUrl;
+            }
+        }
+
+        page.dialogs.commands.changeImagePreviewUp = () => {
+            let imageFile = page.dialogs.elements.imageFileUp[0].files[0];
+
+            if (imageFile) {
+                let reader = new FileReader();
+
+                reader.readAsDataURL(imageFile);
+
+                reader.onload = function (e) {
+                    if (e.target.readyState === FileReader.DONE) {
+                        page.dialogs.commands.loadImageToCanvasUp(imageFile, "BINARY", null);
+                    }
+                }
+            } else {
+                page.dialogs.elements.clearImagePreviewUp();
+            }
+        }
+
+        page.dialogs.elements.clearImagePreviewUp = () => {
+            page.dialogs.elements.imageFileUp.val("");
+            page.dialogs.elements.imagePreviewUp.css("display", "none");
+            page.dialogs.elements.wrapperUp.removeClass("active");
+            page.dialogs.elements.wrapperContentUp.css("opacity", 1);
+        }
+        //--//
+
+        page.dialogs.elements.btnCreate.on("click", () => {
+            page.dialogs.elements.frmCreate.trigger("submit");
+        })
+
+        page.dialogs.elements.btnUpdate.on("click", () => {
+            page.dialogs.elements.frmUpdate.trigger("submit");
+        })
+
+        page.elements.btnShowCreateModal.on("click", () => {
+            page.elements.modalCreate.modal("show");
+        });
+
+        page.commands.handleOpenConfirmDelete = () => {
+            $(".delete").on("click", function () {
+                let productId = $(this).data("id");
+                App.SweetAlert.showSuspendedConfirmDialog()
+                    .then((result) => {
+                        if (result.isConfirmed) {
+                            page.dialogs.commands.deleteProduct(productId);
+                        }
+                    });
+            });
+        }
+        page.dialogs.commands.deleteProduct = (productId) => {
+            $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "DELETE",
+                url: page.urls.delete + productId
+            })
+                .done(() => {
+                    App.SweetAlert.showAlertSuccess(App.AlertMessageEn.SUCCESS_DEACTIVATE);
+                    $("#tr_" + productId).remove();
+                })
+                .fail((jqXHR) => {
+                    console.log("jqXHR deactivateCustomer ======");
+                    console.log(jqXHR);
+
+                    if (jqXHR.status === 401) {
+                        App.IziToast.showErrorAlert(App.AlertMessageEn.ERROR_401);
+                    }
+
+                    if (jqXHR.status === 403) {
+                        App.IziToast.showErrorAlert(App.AlertMessageEn.ERROR_403);
+                    } else {
+                        App.IziToast.showErrorAlert("Delete fail");
+                    }
+                });
+        }
+
+        page.commands.handleOpenModalUpdate = () => {
+            $(".edit").on("click", function () {
+                let productId = $(this).data("id");
+                let avatarFileFolder = $(this).data("avatar-file-folder");
+                let avatarFileName = $(this).data("avatar-file-name");
+
+                let avatarUrl = App.BASE_CLOUDIARY_SERVER + "/" + App.BASE_SCALE_IMAGE_W300_H300_Q100 + "/" + avatarFileFolder + "/" + avatarFileName;
+                page.dialogs.commands.loadImageToCanvasUp(null, "", avatarUrl);
+
+                page.commands.getProductById(productId).then(() => {
+                    page.dialogs.elements.nameUp.val(product.name);
+                    page.dialogs.elements.amountUp.val(product.amount);
+                    page.dialogs.elements.priceUp.val(product.price);
+                    page.dialogs.elements.descriptionUp.val(product.description);
+
+                    page.elements.modalUpdate.modal("show");
+                })
+                    .catch(() => {
+                        console.log("get edit fail");
+                        App.SweetAlert.showAlertError(App.AlertMessageEn.ERROR_404);
+                    });
+            })
+        }
+
+        page.commands.getAllProducts = () => {
+            $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "GET",
+                url: page.urls.getAllProducts
+            })
+                .done((data) => {
+                    data.map(item => {
+                        avatar = item.avatar
+                        page.elements.tbProduct.prepend(App.renderRowProduct(item, avatar));
+                    });
+                    page.commands.initTooltip();
+                    page.commands.handleOpenModalUpdate();
+                    page.commands.handleOpenConfirmDelete();
+                })
+                .fail((jqXHR) => {
+                    App.SweetAlert.showAlertError(App.AlertMessageEn.ERROR_500);
+                })
+        }
+
+        page.commands.getProductById = (productId) => {
+            return $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "GET",
+                url: page.urls.getProductById + "/" + productId
+            })
+                .done((data) => {
+                    product = data;
+                })
+                .fail((jqXHR) => {
+                    console.log("jqXHR ======");
+                    console.log(jqXHR);
+                });
+        }
+
+        // // page.commands.showLoading = () => {
+        //     page.elements.loader.removeClass("hide");
+        //     page.dialogs.elements.btnCreate.prop('disabled', true);
+        //     page.dialogs.elements.btnUpdate.prop('disabled', true);
+        //
+        // }
+        //
+        // page.commands.closeLoading = () => {
+        //     page.elements.loader.addClass("hide");
+        //     page.dialogs.elements.btnCreate.prop('disabled', false);
+        //     page.dialogs.elements.btnUpdate.prop('disabled', false);
+        // }
+
+            //Upload file image
+
+        page.commands.createProduct = () => {
+            // page.commands.showLoading();
+            let formData = new FormData();
+            formData.append("name", page.dialogs.elements.nameCre.val().toString());
+            formData.append("amount", page.dialogs.elements.amountCre.val().toString());
+            formData.append("price", page.dialogs.elements.priceCre.val().toString());
+            formData.append("description", page.dialogs.elements.descriptionCre.val().toString());
+            formData.append("file", page.dialogs.elements.imageFile[0].files[0]);
+            $.ajax({
+                type: "POST",
+                contentType: false,
+                cache: false,
+                processData: false,
+                url: page.urls.create,
+                data: formData
+            }).done((data) => {
+                page.elements.tbProduct.prepend(App.renderRowProduct(data, data.avatar));
+
+
+                page.commands.initTooltip();
+                page.commands.handleOpenModalUpdate();
+                page.commands.handleOpenConfirmDelete();
+                // page.commands.closeLoading();
+
+                App.IziToast.showSuccessAlert(App.AlertMessageEn.SUCCESS_CREATED)
+                page.elements.modalCreate.modal('hide');
+            }).fail((jqXHR) => {
+                App.IziToast.showErrorAlert(App.AlertMessageEn.ERROR_400);
+            });
+        }
+
+        page.commands.updateProduct = () => {
+            // page.commands.showLoading();
+            let formData = new FormData();
+            formData.append("id", product.id.toString());
+            formData.append("name", page.dialogs.elements.nameUp.val().toString());
+            formData.append("amount", page.dialogs.elements.amountUp.val().toString());
+            formData.append("price", page.dialogs.elements.priceUp.val().toString());
+            formData.append("description", page.dialogs.elements.descriptionUp.val().toString());
+            formData.append("file", page.dialogs.elements.imageFileUp[0].files[0]);
+            console.log(page.dialogs.elements.imageFileUp[0].files[0]);
+            $.ajax({
+                type: "PATCH",
+                contentType: false,
+                cache: false,
+                processData: false,
+                url: page.urls.update,
+                data: formData
+            }).done((data) => {
+                let currentRow = $("#tr_" + data.id)
+                currentRow.replaceWith(App.renderRowProduct(data, data.avatar));
+
+                page.commands.initTooltip();
+                page.commands.handleOpenModalUpdate();
+                page.commands.handleOpenConfirmDelete();
+                // page.commands.closeLoading();
+                App.IziToast.showSuccessAlert(App.AlertMessageEn.SUCCESS_UPDATED)
+                page.elements.modalUpdate.modal('hide');
+            }).fail((err) => {
+                console.log(err)
+                App.IziToast.showErrorAlert(App.AlertMessageEn.ERROR_400);
+            });
+        }
+
+        page.dialogs.commands.loadImageToCanvas = (imageFile) => {
+            page.dialogs.elements.imagePreview.css("display", "");
+            page.dialogs.elements.wrapper.addClass("active");
+            page.dialogs.elements.wrapperContent.css("opacity", 0);
+
+            let imageObj = new Image();
+
+            imageObj.onload = function () {
+                page.dialogs.elements.context.canvas.width = imageObj.width;
+                page.dialogs.elements.context.canvas.height = imageObj.height;
+                page.dialogs.elements.context.drawImage(imageObj, 0, 0, imageObj.width, imageObj.height);
+            };
+
+            imageObj.src = URL.createObjectURL(imageFile)
+        }
+
+        page.dialogs.commands.changeImagePreview = () => {
+            let imageFile = page.dialogs.elements.imageFile[0].files[0];
+
+            if (imageFile) {
+                let reader = new FileReader();
+
+                reader.readAsDataURL(imageFile);
+
+                reader.onload = function (e) {
+                    if (e.target.readyState === FileReader.DONE) {
+                        page.dialogs.commands.loadImageToCanvas(imageFile);
+                    }
+                }
+            } else {
+                page.dialogs.elements.clearImagePreview();
+            }
+        }
+
+        page.dialogs.elements.clearImagePreview = () => {
+            page.dialogs.elements.imageFile.val("");
+            page.dialogs.elements.imagePreview.css("display", "none");
+            page.dialogs.elements.wrapper.removeClass("active");
+            page.dialogs.elements.wrapperContent.css("opacity", 1);
+        }
+
+        page.dialogs.elements.frmCreate.validate({
+            rules: {
+                nameCre: {
+                    required: true,
+                    minlength: 5,
+                    maxlength: 100
+                },
+                amountCre: {
+                    required: true,
+                    min: 1,
+                    max: 1000,
+                },
+                priceCre: {
+                    required: true,
+                    min: 50000,
+                    max: 1000000000,
+                },
+                descriptionCre: {
+                    required: true,
+                    minlength: 5,
+                    maxlength: 100
+                }
+
+            },
+            messages: {
+                nameCre: {
+                    required: "Please enter your full name",
+                    minlength: "Minimum 5 characters",
+                    maxlength: "Full name up to 100  characters"
+                },
+                amountCre: {
+                    required: "Please enter quantity !",
+                    min: "must enter an integer greater than 0",
+                    max: "Maximum quantity is 1,000 products"
+                },
+                priceCre: {
+                    required: "please enter price",
+                    min: "Minimum price is 50,000 đ",
+                    max: "The maximum price is 1,000,000,000 đ"
+                },
+                descriptionCre: {
+                    required: "Enter description !",
+                    minlength: "Description at least 5 characters",
+                    maxlength: "Description up to 100 characters"
+                }
+            },
+            submitHandler: function () {
+                page.commands.createProduct();
+            }
+        })
+
+        page.dialogs.elements.frmUpdate.validate({
+            rules: {
+                nameUp: {
+                    required: true,
+                    minlength: 5,
+                    maxlength: 50
+                },
+                amountUp: {
+                    required: true,
+                    min: 1,
+                    max: 1000
+                },
+                priceUp: {
+                    required: true,
+                    min: 1,
+                    max: 10000000000
+                },
+
+
+            },
+            messages: {
+                nameUp: {
+                    required: "Vui lòng nhập tên đầy đủ",
+                    minlength: "Họ tên tối thiểu 5 ký tự",
+                    maxlength: "Họ tên tối đa 50 ký tự"
+                },
+                amountUp: {
+                    required: "vui lòng nhập số lượng",
+                    min: "phải nhập số nguyên lớn hơn 0",
+                    max: "Số lượng tối đa 1.000 sản phẩm"
+                },
+                priceUp: {
+                    required: "vui lòng nhập giá",
+                    min: "phải nhập số nguyên lớn hơn 0",
+                    max: "Giá tối đa 10.000.000.000 đ"
+                }
+
+            },
+            submitHandler: function () {
+                page.commands.updateProduct();
+            }
+        })
+
+        page.commands.initTooltip = () => {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+        }
+
+        page.elements.modalCreate.on("hidden.bs.modal", function () {
+            page.dialogs.elements.frmCreate[0].reset();
+            page.dialogs.elements.btnClearImagePreview.trigger("click");
+        });
+        page.elements.modalUpdate.on("hidden.bs.modal", function () {
+            page.dialogs.elements.frmUpdate[0].reset();
+            page.dialogs.elements.btnClearImagePreview.trigger("click");
+        });
+
+        page.initializeEventControl = () => {
+            page.dialogs.elements.divImagePreview.on("click", function () {
+                page.dialogs.elements.imageFile.trigger("click");
+            });
+
+            page.dialogs.elements.imageFile.on("change", function () {
+                page.dialogs.commands.changeImagePreview();
+            });
+            page.dialogs.elements.btnClearImagePreview.on("click", function () {
+                page.dialogs.elements.clearImagePreview();
+            });
+
+            page.dialogs.elements.divImagePreviewUp.on("click", function () {
+                page.dialogs.elements.imageFileUp.trigger("click");
+            });
+
+            page.dialogs.elements.imageFileUp.on("change", function () {
+                page.dialogs.commands.changeImagePreviewUp();
+            });
+
+        }
+
+        page.loadData = () => {
+            page.commands.getAllProducts();
+        }
+
+        $(() => {
+            page.loadData();
+
+            page.initializeEventControl();
+        })
+
+    </script>
+
+</body>
+
+</html>
